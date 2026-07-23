@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haytickets — Resolución de Conflictos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#111;padding:20px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:20px;font-weight:500;color:#111;margin-bottom:4px}
+.sub{font-size:13px;color:#666;margin-bottom:8px}
+.card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:20px}
+.ttl{font-size:15px;font-weight:500;color:#111;margin-bottom:14px}
+label{font-size:13px;color:#555;display:block;margin-bottom:4px;margin-top:10px}
+select,input,textarea{width:100%;font-size:13px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#111}
+textarea{resize:vertical;min-height:70px}
+.btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #ddd;background:#fff;color:#111}
+.btn:hover{background:#f5f5f5}
+.btn-p{background:#e8f0fe;color:#1a73e8;border-color:#1a73e8}
+.btn-s{background:#e6f4ea;color:#137333;border-color:#137333}
+.btn-d{background:#fce8e6;color:#c5221f;border-color:#c5221f}
+.btn-w{background:#fef7e0;color:#b06000;border-color:#b06000}
+.badge{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:500}
+.b-open{background:#fce8e6;color:#c5221f}
+.b-ok{background:#e6f4ea;color:#137333}
+.b-warn{background:#fef7e0;color:#b06000}
+.b-info{background:#e8f0fe;color:#1a73e8}
+.sug{background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;line-height:1.7;display:none}
+.sug-lbl{font-size:11px;font-weight:500;color:#666;margin-bottom:6px}
+.row{display:flex;justify-content:space-between;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f0f0f0;gap:12px}
+.row:last-child{border-bottom:none}
+.tipo-row{display:flex;justify-content:space-between;align-items:flex-start;padding:12px;margin-bottom:8px;border:1px solid #e0e0e0;border-radius:8px;gap:12px}
+.tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#555}
+.tab.on{background:#e8f0fe;color:#1a73e8;border-color:#1a73e8}
+.pnl{display:none}.pnl.on{display:block}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.stat{background:#f8f9fa;border-radius:8px;padding:14px;text-align:center}
+.sn{font-size:28px;font-weight:500;color:#111}
+.sl{font-size:12px;color:#666;margin-top:2px}
+.acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
+.modal.on{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:20px;width:90%;max-width:500px;max-height:80vh;overflow-y:auto}
+.modal-ttl{font-size:15px;font-weight:500;margin-bottom:14px}
+.modal-acts{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div>
+  <h1>Haytickets — Resolución de Conflictos</h1>
+  <p class="sub">Sistema de gestión y resolución semiautomática</p>
+</div>
+
+<div class="tabs">
+  <div class="tab on" onclick="showTab('nuevo',this)">Nuevo conflicto</div>
+  <div class="tab" onclick="showTab('lista',this)">Casos</div>
+  <div class="tab" onclick="showTab('tipos',this)">Tipos y protocolos</div>
+  <div class="tab" onclick="showTab('stats',this)">Resumen</div>
+</div>
+
+<div id="pnl-nuevo" class="pnl on">
+<div class="card">
+  <div class="ttl">Registrar nuevo conflicto</div>
+  <label>Tipo de conflicto</label>
+  <select id="tipo" onchange="suggest()"><option value="">— Seleccionar —</option></select>
+  <label>Gravedad</label>
+  <select id="grav">
+    <option value="baja">Baja — consulta o malentendido</option>
+    <option value="media" selected>Media — afecta la transacción</option>
+    <option value="alta">Alta — pérdida de dinero o fraude</option>
+  </select>
+  <div class="g2">
+    <div><label>Comprador</label><input id="comp" placeholder="Nombre del comprador"></div>
+    <div><label>Vendedor</label><input id="vend" placeholder="Nombre del vendedor"></div>
+  </div>
+  <label>Evento</label>
+  <input id="evento" placeholder="Ej: BTS — 24 oct, Movistar Arena">
+  <label>Monto en disputa (ARS)</label>
+  <input id="monto" type="number" placeholder="Ej: 50000">
+  <label>Descripción del conflicto</label>
+  <textarea id="desc" placeholder="Describí el problema con el mayor detalle posible..."></textarea>
+  <div class="sug" id="sug"><div class="sug-lbl">Resolución sugerida por el sistema</div><div id="sug-txt"></div></div>
+  <div class="acts">
+    <button class="btn btn-p" onclick="registrar()">Registrar conflicto</button>
+    <button class="btn" onclick="limpiar()">Limpiar</button>
+  </div>
+</div>
+</div>
+
+<div id="pnl-lista" class="pnl">
+<div class="card">
+  <div class="ttl">Casos registrados</div>
+  <div id="lista"><p style="font-size:13px;color:#666">No hay casos registrados aún.</p></div>
+</div>
+</div>
+
+<div id="pnl-tipos" class="pnl">
+<div class="card">
+  <div class="ttl" style="display:flex;justify-content:space-between;align-items:center">
+    <span>Tipos de conflicto y protocolos</span>
+    <button class="btn btn-p" onclick="abrirNuevoTipo()">+ Agregar tipo</button>
+  </div>
+  <div id="lista-tipos"></div>
+</div>
+</div>
+
+<div id="pnl-stats" class="pnl">
+<div class="card">
+  <div class="ttl">Resumen general</div>
+  <div class="g2">
+    <div class="stat"><div class="sn" id="st-tot">0</div><div class="sl">Total casos</div></div>
+    <div class="stat"><div class="sn" id="st-ab">0</div><div class="sl">Abiertos</div></div>
+    <div class="stat"><div class="sn" id="st-res">0</div><div class="sl">Resueltos</div></div>
+    <div class="stat"><div class="sn" id="st-m">$0</div><div class="sl">Monto en disputa</div></div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- Modal nuevo/editar tipo -->
+<div class="modal" id="modal-tipo">
+  <div class="modal-box">
+    <div class="modal-ttl" id="modal-tipo-ttl">Agregar tipo de conflicto</div>
+    <input type="hidden" id="edit-key">
+    <label>Nombre del conflicto</label>
+    <input id="edit-nombre" placeholder="Ej: Entrada con datos incorrectos">
+    <label>Protocolo de resolución (paso a paso)</label>
+    <textarea id="edit-res" style="min-height:140px" placeholder="1. Primer paso...\n2. Segundo paso...\n3. Tercer paso..."></textarea>
+    <div class="modal-acts">
+      <button class="btn" onclick="cerrarModal('modal-tipo')">Cancelar</button>
+      <button class="btn btn-p" onclick="guardarTipo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ver conflicto -->
+<div class="modal" id="modal-caso">
+  <div class="modal-box">
+    <div class="modal-ttl" id="mc-ttl">Detalle del caso</div>
+    <div id="mc-body"></div>
+    <div class="modal-acts">
+      <button class="btn" onclick="cerrarModal('modal-caso')">Cerrar</button>
+      <button class="btn btn-s" id="mc-btn-res" onclick="">Marcar resuelto</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_TIPOS = {
+  no_recibio:{nombre:"Comprador no recibió la entrada",res:"1. Verificar historial de envíos de la entrada.\n2. Contactar al vendedor para reenvío inmediato.\n3. Si no se resuelve en 2 horas: reembolso total y suspensión temporal del vendedor."},
+  invalida:{nombre:"Entrada inválida o no funcionó en el evento",res:"1. Solicitar foto o captura del error al comprador.\n2. Contactar al vendedor para que justifique la validez.\n3. Si se confirma invalidez: reembolso total + compensación 10% al comprador. Penalización al vendedor."},
+  tarde:{nombre:"Vendedor no entregó a tiempo",res:"1. Verificar fecha y hora pactada de entrega.\n2. Si el evento ya ocurrió: reembolso total automático.\n3. Si el evento no ocurrió: dar 1 hora al vendedor, sino reembolso."},
+  reembolso:{nombre:"Problema con pago o reembolso",res:"1. Verificar si el pago fue acreditado correctamente.\n2. Si hay error de la plataforma: reembolso en 24 horas.\n3. Si es disputa entre partes: retener el monto hasta resolución."},
+  duplicada:{nombre:"Entrada duplicada o ya usada",res:"1. Verificar en el sistema si la entrada fue vendida más de una vez.\n2. Reembolso inmediato a la parte perjudicada.\n3. Suspensión permanente del vendedor si se confirma duplicado intencional."},
+  sector:{nombre:"Sector o ubicación incorrecta",res:"1. Comparar descripción publicada vs entrada recibida.\n2. Si hay diferencia: ofrecer reembolso parcial o devolución total.\n3. El vendedor debe corregir su publicación."},
+  precio:{nombre:"Precio cobrado diferente al publicado",res:"1. Revisar el precio publicado al momento de la compra.\n2. Si se cobró de más: reembolsar la diferencia inmediatamente.\n3. Advertencia formal al vendedor."},
+  no_responde:{nombre:"Vendedor no responde",res:"1. Enviar notificación urgente al vendedor por todos los canales.\n2. Si no responde en 4 horas: reembolso total al comprador.\n3. Suspensión temporal del vendedor hasta que se comunique."},
+  no_pago:{nombre:"Comprador no realizó el pago",res:"1. Verificar si el pago fue iniciado.\n2. Dar 2 horas adicionales para completar el pago.\n3. Si no paga: cancelar la reserva y liberar la entrada."},
+  cancelado:{nombre:"Evento cancelado o reprogramado",res:"1. Confirmar la cancelación con la organización oficial del evento.\n2. Reembolso automático del 100% a todos los compradores afectados.\n3. Liberar los fondos retenidos a los vendedores."},
+  fraude:{nombre:"Sospecha de fraude",res:"1. Suspender inmediatamente la cuenta sospechosa.\n2. Retener todos los fondos involucrados.\n3. Documentar y escalar a revisión manual urgente.\n4. Si se confirma: ban permanente."},
+  otro:{nombre:"Otro",res:"1. Revisar el caso manualmente con todos los detalles.\n2. Contactar a ambas partes para obtener su versión.\n3. Decidir en base a las políticas de Haytickets."}
+};
+
+let tipos = {};
+let data = [];
+let cnt = 1;
+
+try { tipos = JSON.parse(localStorage.getItem('hk_tipos') || 'null') || JSON.parse(JSON.stringify(DEFAULT_TIPOS)); } catch(e){ tipos = JSON.parse(JSON.stringify(DEFAULT_TIPOS)); }
+try { data = JSON.parse(localStorage.getItem('hk_c') || '[]'); cnt = parseInt(localStorage.getItem('hk_n') || '1'); } catch(e){}
+
+function saveTipos(){ try{ localStorage.setItem('hk_tipos', JSON.stringify(tipos)); }catch(e){} }
+function saveData(){ try{ localStorage.setItem('hk_c', JSON.stringify(data)); localStorage.setItem('hk_n', String(cnt)); }catch(e){} }
+
+function buildSelect(){
+  const sel = document.getElementById('tipo');
+  sel.innerHTML = '<option value="">— Seleccionar —</option>';
+  Object.entries(tipos).forEach(([k,v])=>{
+    const o = document.createElement('option');
+    o.value = k; o.textContent = v.nombre; sel.appendChild(o);
+  });
+}
+
+function showTab(id, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.pnl').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('pnl-'+id).classList.add('on');
+  if(id==='lista') renderLista();
+  if(id==='tipos') renderTipos();
+  if(id==='stats') renderStats();
+}
+
+function suggest(){
+  const t = document.getElementById('tipo').value, b = document.getElementById('sug');
+  if(t && tipos[t]){ document.getElementById('sug-txt').innerText = tipos[t].res; b.style.display='block'; }
+  else b.style.display='none';
+}
+
+function registrar(){
+  const t = document.getElementById('tipo').value;
+  if(!t){ alert('Seleccioná el tipo de conflicto'); return; }
+  const c = {
+    id:'HK-'+String(cnt).padStart(4,'0'), tipo:t,
+    grav:document.getElementById('grav').value,
+    comp:document.getElementById('comp').value||'Sin datos',
+    vend:document.getElementById('vend').value||'Sin datos',
+    evento:document.getElementById('evento').value||'Sin datos',
+    monto:document.getElementById('monto').value||'0',
+    desc:document.getElementById('desc').value,
+    res:tipos[t]?.res||'', estado:'abierto',
+    fecha:new Date().toLocaleDateString('es-AR')
+  };
+  data.unshift(c); cnt++;
+  saveData();
+  alert('Conflicto '+c.id+' registrado correctamente.');
+  limpiar();
+}
+
+function limpiar(){
+  ['tipo','comp','vend','evento','monto','desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('grav').value='media';
+  document.getElementById('sug').style.display='none';
+}
+
+function resolver(id){
+  const c = data.find(x=>x.id===id);
+  if(c){ c.estado='resuelto'; saveData(); renderLista(); renderStats(); cerrarModal('modal-caso'); }
+}
+
+function verCaso(id){
+  const c = data.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('mc-ttl').innerText = c.id+' — '+c.evento;
+  document.getElementById('mc-body').innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <span class="badge ${c.estado==='resuelto'?'b-ok':'b-open'}">${c.estado==='resuelto'?'Resuelto':'Abierto'}</span>
+      <span class="badge ${c.grav==='alta'?'b-open':c.grav==='media'?'b-warn':'b-info'}">${c.grav}</span>
+      <span class="badge b-info">${c.fecha}</span>
+    </div>
+    <div style="font-size:13px;line-height:1.8">
+      <b>Comprador:</b> ${c.comp}<br>
+      <b>Vendedor:</b> ${c.vend}<br>
+      <b>Monto:</b> $${parseInt(c.monto).toLocaleString('es-AR')} ARS<br>
+      <b>Descripción:</b> ${c.desc||'Sin descripción'}<br><br>
+      <b>Protocolo sugerido:</b><br>
+      <div style="background:#f8f9fa;border-radius:8px;padding:10px;margin-top:6px;white-space:pre-wrap">${c.res}</div>
+    </div>`;
+  const btn = document.getElementById('mc-btn-res');
+  if(c.estado==='resuelto'){ btn.style.display='none'; } else { btn.style.display='block'; btn.onclick=()=>resolver(id); }
+  document.getElementById('modal-caso').classList.add('on');
+}
+
+function renderLista(){
+  const el = document.getElementById('lista');
+  if(!data.length){ el.innerHTML='<p style="font-size:13px;color:#666">No hay casos registrados aún.</p>'; return; }
+  el.innerHTML = data.map(c=>`
+    <div class="row">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="verCaso('${c.id}')">
+        <div style="font-size:11px;color:#666">${c.id} · ${c.fecha}</div>
+        <div style="font-size:13px;font-weight:500;margin-top:2px">${c.evento}</div>
+        <div style="font-size:11px;color:#666;margin-top:2px">${c.comp} vs ${c.vend} · $${parseInt(c.monto).toLocaleString('es-AR')} ARS</div>
+        <div style="font-size:12px;color:#555;margin-top:4px;line-height:1.5">${c.res.split('\n')[0]}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+        <span class="badge ${c.estado==='resuelto'?'b-ok':'b-open'}">${c.estado==='resuelto'?'Resuelto':'Abierto'}</span>
+        <span class="badge ${c.grav==='alta'?'b-open':c.grav==='media'?'b-warn':'b-info'}">${c.grav}</span>
+        ${c.estado!=='resuelto'?`<button class="btn btn-s" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();resolver('${c.id}')">Marcar resuelto</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function renderTipos(){
+  const el = document.getElementById('lista-tipos');
+  el.innerHTML = Object.entries(tipos).map(([k,v])=>`
+    <div class="tipo-row">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${v.nombre}</div>
+        <div style="font-size:12px;color:#666;margin-top:4px;line-height:1.5">${v.res.split('\n')[0]}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-w" style="font-size:11px;padding:4px 10px" onclick="editarTipo('${k}')">Editar</button>
+        <button class="btn btn-d" style="font-size:11px;padding:4px 10px" onclick="eliminarTipo('${k}')">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+function abrirNuevoTipo(){
+  document.getElementById('modal-tipo-ttl').innerText = 'Agregar tipo de conflicto';
+  document.getElementById('edit-key').value = '';
+  document.getElementById('edit-nombre').value = '';
+  document.getElementById('edit-res').value = '';
+  document.getElementById('modal-tipo').classList.add('on');
+}
+
+function editarTipo(k){
+  document.getElementById('modal-tipo-ttl').innerText = 'Editar tipo de conflicto';
+  document.getElementById('edit-key').value = k;
+  document.getElementById('edit-nombre').value = tipos[k].nombre;
+  document.getElementById('edit-res').value = tipos[k].res;
+  document.getElementById('modal-tipo').classList.add('on');
+}
+
+function guardarTipo(){
+  const nombre = document.getElementById('edit-nombre').value.trim();
+  const res = document.getElementById('edit-res').value.trim();
+  if(!nombre || !res){ alert('Completá el nombre y el protocolo'); return; }
+  let k = document.getElementById('edit-key').value;
+  if(!k){
+    k = nombre.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,20)+'_'+Date.now().toString().slice(-4);
+  }
+  tipos[k] = { nombre, res };
+  saveTipos();
+  buildSelect();
+  cerrarModal('modal-tipo');
+  renderTipos();
+  alert('Tipo guardado correctamente.');
+}
+
+function eliminarTipo(k){
+  if(!confirm('¿Eliminar este tipo de conflicto?')) return;
+  delete tipos[k];
+  saveTipos();
+  buildSelect();
+  renderTipos();
+}
+
+function cerrarModal(id){ document.getElementById(id).classList.remove('on'); }
+
+function renderStats(){
+  const tot=data.length, ab=data.filter(c=>c.estado==='abierto').length;
+  const res=data.filter(c=>c.estado==='resuelto').length;
+  const m=data.reduce((s,c)=>s+parseInt(c.monto||0),0);
+  document.getElementById('st-tot').innerText=tot;
+  document.getElementById('st-ab').innerText=ab;
+  document.getElementById('st-res').innerText=res;
+  document.getElementById('st-m').innerText='$'+m.toLocaleString('es-AR');
+}
+
+buildSelect();
+</script>
+</body>
+</html>
